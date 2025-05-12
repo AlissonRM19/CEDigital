@@ -1,22 +1,30 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 function LoginProfesor() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const navigate = useNavigate();
+  
 
   const handleLogin = async () => {
     try {
       const res = await axios.post('http://localhost:3000/api/profesor/login', {
-        email: email,
-        password: password
+        email,
+        password
       });
+      
       console.log(res.data);
       alert('Login exitoso');
+      localStorage.setItem('usuario', JSON.stringify(res.data.usuario));
+      navigate('/profesor'); //Redirige a la pagina del profesor
     } catch (error) {
       alert('Login fallido');
     }
   };
+  
+
 
   return (
     <div>
@@ -39,3 +47,4 @@ function LoginProfesor() {
 }
 
 export default LoginProfesor;
+

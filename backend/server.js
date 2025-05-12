@@ -1,7 +1,7 @@
 // server.js
+const cors = require('cors');
 const express = require('express');
 const mongoose = require('mongoose');
-const cors = require('cors');
 require('dotenv').config();
 
 const loginRoutes = require('./routes/login');
@@ -9,8 +9,17 @@ const loginRoutes = require('./routes/login');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:5173'  // <-- permite a Vite acceder
+}));
+
+const documentosRoutes = require('./routes/documentos');
+app.use('/api/documentos', documentosRoutes);
+
+//app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 
 // Conexión a MongoDB
 mongoose.connect(process.env.MONGO_URI, {
