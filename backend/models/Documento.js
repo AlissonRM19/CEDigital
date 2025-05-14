@@ -2,10 +2,10 @@
 const mongoose = require('mongoose');
 
 const DocumentoSchema = new mongoose.Schema({
-  nombre: String,
-  url: String,
-  carpeta: String, // Ej: "Unidad 1", "Tareas", etc.
-  creadoPor: String,
+  nombre: { type: String, required: true },
+  carpeta: { type: String, required: true },
+  creadoPor: { type: String, required: true },
+  url: { type: String, required: true },
   //creadoPor: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario' },
   //fechaSubida: { type: Date, default: Date.now }
 });

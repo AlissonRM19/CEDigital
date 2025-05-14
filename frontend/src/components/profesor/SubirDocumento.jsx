@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 
-function SubirDocumento() {
+function SubirDocumento({ onSubido }) { // 👈 Recibe la prop
   const [archivo, setArchivo] = useState(null);
   const [carpeta, setCarpeta] = useState('');
 
-  // TEMPORAL: simulamos un ID de usuario
-  const usuario = { _id: '1234567890' }; // Aquí deberías obtenerlo desde el contexto o props
+  const usuario = { _id: '1234567890' };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -27,9 +26,10 @@ function SubirDocumento() {
       });
 
       if (res.ok) {
-        alert('Documento ha sido subido correctamente.');
+        alert('📄 Documento ha sido subido correctamente.');
+        if (onSubido) onSubido(); // ✅ Llama a la función para refrescar la lista
       } else {
-        alert('Ocurrió un error al subir el documento');
+        alert('❌ Ocurrió un error al subir el documento');
       }
     } catch (err) {
       console.error('Error:', err);

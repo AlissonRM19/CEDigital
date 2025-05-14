@@ -3,6 +3,7 @@ const express = require('express');
 const multer = require('multer');
 const Documento = require('../models/Documento');
 const router = express.Router();
+const mongoose = require('mongoose');
 
 // Configuración de almacenamiento con multer
 const storage = multer.diskStorage({
@@ -37,5 +38,89 @@ router.post('/subir', upload.single('archivo'), async (req, res) => {
     res.status(500).json({ mensaje: 'Error al subir el documento', error: error.message });
   }
 });
+
+// Obtener todos los documentos
+router.get('/', async (req, res) => {
+  try {
+    const documentos = await Documento.find();
+    res.json(documentos);
+  } catch (error) {
+    console.error('Error al obtener documentos:', error);
+    res.status(500).json({ error: 'Error al obtener documentos' });
+  }
+})
+
+// Editar documento
+// PUT /api/documentos/editar/:id
+/*router.put('/editar/:id', async (req, res) => {
+  try {
+    const { nombre, carpeta } = req.body;
+    const actualizado = await Documento.findByIdAndUpdate(
+      req.params.id,
+      { nombre, carpeta },
+      { new: true }
+    );
+    res.json(actualizado);
+  } catch (error) {
+    console.error('Error al editar documento:', error);
+    res.status(500).json({ mensaje: 'Error al editar documento' });
+  }
+});*/
+
+
+router.put('/editar/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: 'ID inválido' });
+    }
+
+    const { nombre, carpeta } = req.body;
+
+    const documentoActualizado = await Documento.findByIdAndUpdate(
+      id,
+      { nombre, carpeta },
+      { new: true }
+    );
+
+    if (!documentoActualizado) {
+      return res.status(404).json({ error: 'Documento no encontrado' });
+    }
+
+    res.json(documentoActualizado);
+  } catch (error) {
+    console.error('🔥 Error al editar documento:', error);
+    res.status(500).json({
+      error: 'Error al editar documento',
+      detalle: error.message,
+    });
+  }
+});
+
+//Eliminar documentos del profesor
+// DELETE /api/documentos/eliminar/:id
+router.delete('/eliminar/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: 'ID inválido' });
+    }
+
+    const eliminado = await Documento.findByIdAndDelete(id);
+
+    if (!eliminado) {
+      return res.status(404).json({ error: 'Documento no encontrado' });
+    }
+
+    res.json({ mensaje: 'Documento eliminado correctamente', documento: eliminado });
+  } catch (error) {
+    console.error('🔥 Error al eliminar documento:', error);
+    res.status(500).json({ error: 'Error al eliminar documento' });
+  }
+});
+
+
 
 module.exports = router;
