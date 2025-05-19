@@ -4,8 +4,8 @@ function SubirDocumento({ onSubido }) { // 👈 Recibe la prop
   const [archivo, setArchivo] = useState(null);
   const [carpeta, setCarpeta] = useState('');
 
-  const usuario = { _id: '1234567890' };
-
+  const usuario = JSON.parse(localStorage.getItem('usuario')); // obtener usuario
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -38,7 +38,9 @@ function SubirDocumento({ onSubido }) { // 👈 Recibe la prop
   };
 
   return (
+    
     <form onSubmit={handleSubmit}>
+      <h3>Subir Documetos </h3>
       <input type="file" onChange={e => setArchivo(e.target.files[0])} />
       <input type="text" placeholder="Nombre de carpeta" onChange={e => setCarpeta(e.target.value)} />
       <button type="submit">Subir</button>

@@ -2,18 +2,25 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import EditarDocumento from './EditarDocumento';
-import SubirDocumento from './SubirDocumento'; // asegúrate de importarlo
+import SubirDocumento from './SubirDocumento';
 
 
 
 function ListaDocumentos() {
   const [documentos, setDocumentos] = useState([]);
   const [docEditar, setDocEditar] = useState(null);
+  const profesorId = localStorage.getItem('profesorId');
+
 
   const cargarDocumentos = async () => {
-    const res = await axios.get('http://localhost:3000/api/documentos');
+    const usuario = JSON.parse(localStorage.getItem('usuario'));
+    if (!usuario) return;
+
+    const res = await axios.get(`http://localhost:3000/api/documentos/profesor/${usuario._id}`);
     setDocumentos(res.data);
   };
+
+
 
   useEffect(() => {
     cargarDocumentos();
@@ -42,7 +49,7 @@ function ListaDocumentos() {
 };
 
 
-  /*const editarDocumento = async (id) => {
+  const editarDocumento = async (id) => {
     const nuevoNombre = prompt('Nuevo nombre del archivo:');
     const nuevaCarpeta = prompt('Nueva carpeta:');
     if (!nuevoNombre || !nuevaCarpeta) return;
@@ -58,12 +65,12 @@ function ListaDocumentos() {
     const res = await fetch('http://localhost:3000/api/documentos');
     const data = await res.json();
     setDocumentos(data);
-  };*/
+  };
 
   return (
     <div>
-      <h3>Documentos del profesor</h3>
       <SubirDocumento onSubido={handleDocumentoSubido} />
+      <h3>Documentos del profesor</h3>
       <ul>
         {documentos.map((doc) => (
           <li key={doc._id}>

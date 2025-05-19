@@ -6,23 +6,26 @@ function LoginProfesor() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
+  const irARegistro = () => {
+    navigate('/registro');
+  };
   
 
-  const handleLogin = async () => {
-    try {
-      const res = await axios.post('http://localhost:3000/api/profesor/login', {
-        email,
-        password
-      });
-      
-      console.log(res.data);
-      alert('Login exitoso');
-      localStorage.setItem('usuario', JSON.stringify(res.data.usuario));
-      navigate('/profesor'); //Redirige a la pagina del profesor
-    } catch (error) {
-      alert('Login fallido');
-    }
-  };
+  const handleLogin = async (e) => {
+  e.preventDefault();
+  try {
+    const res = await axios.post('http://localhost:3000/api/profesor/login', {
+      email,
+      password
+    });
+    console.log(res.data); // <-- Deberías ver el mensaje exitoso
+    navigate('/profesor/dashboard');
+  } catch (error) {
+    console.error('Error al hacer login:', error);
+    alert('Error al iniciar sesión');
+  }
+};
+
   
 
 
@@ -42,6 +45,11 @@ function LoginProfesor() {
         onChange={e => setPassword(e.target.value)}
       />
       <button onClick={handleLogin}>Iniciar sesión</button>
+      
+      <button onClick={irARegistro}>
+        ¿No tienes cuenta? Regístrate aquí
+      </button>
+
     </div>
   );
 }

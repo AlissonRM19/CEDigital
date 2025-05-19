@@ -1,5 +1,3 @@
-import React, { useState } from 'react';
-import SubirDocumento from '../components/profesor/SubirDocumento';
 import ListaDocumentos from '../components/profesor/ListaDocumentos';
 
 function ProfesorPage() {

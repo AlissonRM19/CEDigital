@@ -40,15 +40,27 @@ router.post('/subir', upload.single('archivo'), async (req, res) => {
 });
 
 // Obtener todos los documentos
-router.get('/', async (req, res) => {
-  try {
-    const documentos = await Documento.find();
-    res.json(documentos);
-  } catch (error) {
-    console.error('Error al obtener documentos:', error);
-    res.status(500).json({ error: 'Error al obtener documentos' });
+// rutas/documentos.js
+/*router.get('/', async (req, res) => {
+  const { profesorId } = req.query;
+
+  if (!profesorId) {
+    return res.status(400).json({ mensaje: 'Falta el ID del profesor' });
   }
-})
+
+  const documentos = await Documento.find({ creadoPor: profesorId });
+  res.json(documentos);
+});*/
+router.get('/profesor/:id', async (req, res) => {
+  try {
+    const documentos = await Documento.find({ creadoPor: req.params.id });
+    res.json(documentos);
+  } catch (err) {
+    res.status(500).json({ mensaje: 'Error al obtener documentos' });
+  }
+});
+
+
 
 // Editar documento
 // PUT /api/documentos/editar/:id
