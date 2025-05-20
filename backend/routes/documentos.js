@@ -53,7 +53,9 @@ router.post('/subir', upload.single('archivo'), async (req, res) => {
 });*/
 router.get('/profesor/:id', async (req, res) => {
   try {
-    const documentos = await Documento.find({ creadoPor: req.params.id });
+    //const documentos = await Documento.find({ creadoPor: req.params.id });
+    const { id } = req.params;
+    const documentos = await Documento.find({ profesorId: id }); // o el campo que uses
     res.json(documentos);
   } catch (err) {
     res.status(500).json({ mensaje: 'Error al obtener documentos' });

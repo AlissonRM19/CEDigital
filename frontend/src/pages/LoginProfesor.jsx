@@ -18,6 +18,13 @@ function LoginProfesor() {
       email,
       password
     });
+
+    const usuario = res.data.usuario;
+
+    // ✅ Guardamos ID y nombre (o lo que necesites) en localStorage
+    localStorage.setItem('profesorId', usuario._id);
+    localStorage.setItem('nombreProfesor', usuario.nombre);
+
     console.log(res.data); // <-- Deberías ver el mensaje exitoso
     navigate('/profesor/dashboard');
   } catch (error) {
