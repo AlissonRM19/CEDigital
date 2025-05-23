@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="..\buildMultiTargeting\CEDigitalMongo.Api.props" />
-</Project>
