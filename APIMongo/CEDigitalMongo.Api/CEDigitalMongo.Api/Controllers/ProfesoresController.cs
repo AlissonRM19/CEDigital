@@ -1,122 +1,154 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using CEDigitalMongo.Api.Models;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
-using CEDigitalMongo.Api.Models;
+
 
 namespace CEDigitalMongo.Api.Controllers
 {
+    /// <summary>
+    /// Controlador para gestionar CRUD de profesores usando la cédula como identificador.
+    /// </summary>
     [ApiController]
     [Route("api/[controller]")]
     public class ProfesoresController : ControllerBase
     {
         private readonly IMongoCollection<Profesor> _profesores;
 
+        /// <summary>
+        /// Constructor que recibe la colección de Profesor inyectada por DI.
+        /// </summary>
+        /// <param name="profesores">Colección de MongoDB de Profesor.</param>
         public ProfesoresController(IMongoCollection<Profesor> profesores)
         {
             _profesores = profesores;
         }
 
         /// <summary>
-        /// GET api/profesores
-        /// Devuelve todos los profesores.
+        /// GET /api/profesores
+        /// Obtiene la lista completa de profesores.
         /// </summary>
         [HttpGet]
         public async Task<ActionResult<List<Profesor>>> GetAll()
         {
+            // Recupera todos los documentos de la colección
             var lista = await _profesores.Find(_ => true).ToListAsync();
             return Ok(lista);
         }
 
         /// <summary>
-        /// GET api/profesores/{id}
-        /// Devuelve un profesor por su Id de MongoDB.
+        /// GET /api/profesores/{cedula}
+        /// Obtiene un profesor por su cédula.
         /// </summary>
-        [HttpGet("{id:length(24)}")]
-        public async Task<ActionResult<Profesor>> GetById(string id)
+        /// <param name="cedula">Cédula del profesor a buscar (formato X-XXXX-XXXX).</param>
+        [HttpGet("{cedula}")]
+        public async Task<ActionResult<Profesor>> GetByCedula(string cedula)
         {
-            var profesor = await _profesores.Find(x => x.Id == id).FirstOrDefaultAsync();
-            if (profesor == null)
-                return NotFound($"Profesor con Id='{id}' no encontrado.");
+            // Busca el profesor cuyo campo Cedula coincida
+            var profesor = await _profesores
+                .Find(p => p.Cedula == cedula)
+                .FirstOrDefaultAsync();
+
+            if (profesor is null)
+                return NotFound($"No existe profesor con cédula '{cedula}'.");
+
+            // Ocultamos la contraseña en la respuesta
+            profesor.PasswordMd5 = null!;
             return Ok(profesor);
         }
 
         /// <summary>
-        /// POST api/profesores
-        /// Crea un nuevo profesor. La contraseña en el cuerpo debe ser la clara;
-        /// aquí se convierte a MD5 antes de guardar.
+        /// POST /api/profesores
+        /// Crea un nuevo profesor. Se espera la cédula única en el cuerpo.
         /// </summary>
+        /// <param name="profesor">Objeto Profesor con datos a insertar.</param>
         [HttpPost]
         public async Task<ActionResult<Profesor>> Create([FromBody] Profesor profesor)
         {
-            // Validar payload mínimo
-            if (string.IsNullOrWhiteSpace(profesor.Cedula) ||
-                string.IsNullOrWhiteSpace(profesor.Nombre) ||
-                string.IsNullOrWhiteSpace(profesor.Correo) ||
-                string.IsNullOrWhiteSpace(profesor.PasswordMd5))
-            {
-                return BadRequest("Faltan campos obligatorios.");
-            }
-
-            // Convertir la contraseña clara a MD5
+            // Convertir la contraseña clara a MD5 antes de guardar
             profesor.PasswordMd5 = ComputeMd5(profesor.PasswordMd5);
 
+            // Inserta el documento en la colección
             await _profesores.InsertOneAsync(profesor);
-            return CreatedAtAction(nameof(GetById), new { id = profesor.Id }, profesor);
+
+            // Ocultamos la contraseña en la respuesta
+            profesor.PasswordMd5 = null!;
+
+            // Devuelve 201 Created y la ruta al recurso creado
+            return CreatedAtAction(
+                nameof(GetByCedula),
+                new { cedula = profesor.Cedula },
+                profesor);
         }
 
         /// <summary>
-        /// PUT api/profesores/{id}
-        /// Actualiza un profesor existente. Si se envía PasswordMd5,
-        /// se asume en texto claro y se convierte a MD5.
+        /// PUT /api/profesores/{cedula}
+        /// Actualiza un profesor existente. Mantiene valores no enviados.
         /// </summary>
-        [HttpPut("{id:length(24)}")]
-        public async Task<IActionResult> Update(string id, [FromBody] Profesor profesorIn)
+        /// <param name="cedula">Cédula del profesor a actualizar.</param>
+        /// <param name="dto">Objeto con los campos a modificar.</param>
+        [HttpPut("{cedula}")]
+        public async Task<IActionResult> Update(string cedula, [FromBody] Profesor dto)
         {
-            var existente = await _profesores.Find(x => x.Id == id).FirstOrDefaultAsync();
-            if (existente == null)
-                return NotFound($"Profesor con Id='{id}' no encontrado.");
+            // Verifica si el profesor existe
+            var existente = await _profesores
+                .Find(p => p.Cedula == cedula)
+                .FirstOrDefaultAsync();
 
-            // Si vienen campos nulos o vacíos, mantener el valor existente
-            existente.Cedula = string.IsNullOrWhiteSpace(profesorIn.Cedula) ? existente.Cedula : profesorIn.Cedula;
-            existente.Nombre = string.IsNullOrWhiteSpace(profesorIn.Nombre) ? existente.Nombre : profesorIn.Nombre;
-            existente.Correo = string.IsNullOrWhiteSpace(profesorIn.Correo) ? existente.Correo : profesorIn.Correo;
+            if (existente is null)
+                return NotFound($"No existe profesor con cédula '{cedula}'.");
 
-            if (!string.IsNullOrWhiteSpace(profesorIn.PasswordMd5))
+            // Actualiza solo los campos proporcionados (si no vienen, conserva el valor anterior)
+            existente.Nombre = dto.Nombre ?? existente.Nombre;
+            existente.Correo = dto.Correo ?? existente.Correo;
+
+            // Si se envía nueva contraseña, la convierte a MD5
+            if (!string.IsNullOrWhiteSpace(dto.PasswordMd5))
             {
-                existente.PasswordMd5 = ComputeMd5(profesorIn.PasswordMd5);
+                existente.PasswordMd5 = ComputeMd5(dto.PasswordMd5);
             }
 
-            await _profesores.ReplaceOneAsync(x => x.Id == id, existente);
+            // Reemplaza el documento completo en la colección
+            await _profesores.ReplaceOneAsync(p => p.Cedula == cedula, existente);
             return NoContent();
         }
 
         /// <summary>
-        /// DELETE api/profesores/{id}
-        /// Elimina un profesor por su Id.
+        /// DELETE /api/profesores/{cedula}
+        /// Elimina un profesor según su cédula.
         /// </summary>
-        [HttpDelete("{id:length(24)}")]
-        public async Task<IActionResult> Delete(string id)
+        /// <param name="cedula">Cédula del profesor a eliminar.</param>
+        [HttpDelete("{cedula}")]
+        public async Task<IActionResult> Delete(string cedula)
         {
-            var resultado = await _profesores.DeleteOneAsync(x => x.Id == id);
-            if (resultado.DeletedCount == 0)
-                return NotFound($"Profesor con Id='{id}' no encontrado.");
+            // Elimina el documento cuyo Cedula coincida
+            var result = await _profesores.DeleteOneAsync(p => p.Cedula == cedula);
+
+            if (result.DeletedCount == 0)
+                return NotFound($"No existe profesor con cédula '{cedula}'.");
+
             return NoContent();
         }
 
         /// <summary>
         /// Genera el hash MD5 en minúsculas de la cadena de entrada.
         /// </summary>
+        /// <param name="input">Texto claro a hashear.</param>
+        /// <returns>Hash MD5 en minúsculas (32 caracteres).</returns>
         private static string ComputeMd5(string input)
         {
             using var md5 = MD5.Create();
-            var bytes = md5.ComputeHash(Encoding.UTF8.GetBytes(input));
+            byte[] bytes = md5.ComputeHash(Encoding.UTF8.GetBytes(input));
             var sb = new StringBuilder();
             foreach (var b in bytes)
+            {
                 sb.Append(b.ToString("x2"));
+            }
             return sb.ToString();
         }
     }
 }
+
